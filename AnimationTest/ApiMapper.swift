@@ -1,0 +1,45 @@
+import UIKit
+
+class ApiMapper {
+    
+    //MARK: Shared Instance
+    
+    static let sharedInstance : ApiMapper = {
+        let instance = ApiMapper()
+        return instance
+    }()
+    
+    
+    init() {
+    }
+    
+    //MARK: Api Calls
+    
+    func callAPI<T: Codable>(withPath pathString: String, params : [(String, String)], andMappingModel model: T.Type, callback: @escaping (_ result: Result<T, Error>) -> Void ) {
+        
+        let url = self.generateURL(withPath: pathString , andParams: [])
+        let task = URLSession.shared.dataTask(with: url) { (data, response, error) in
+            do {
+                let jsonDecoder = JSONDecoder()
+                let responseModel = try jsonDecoder.decode(model, from: data!)
+                callback(Result.success(responseModel))
+            } catch {
+                callback(Result.failure(error))
+            }
+        }
+        task.resume()
+    }
+    
+    //MARK: helper methods
+    
+    func generateURL(withPath path: String, andParams params: [(String, String)]) -> URL {
+        
+        var urlComp = URLComponents(string: AppData.baseUrl)!
+        for param in params {
+            urlComp.queryItems?.append(URLQueryItem(name: param.0, value: param.1))
+        }
+        var url = urlComp.url!
+        url = url.appendingPathComponent(path)
+        return url
+    }
+}
